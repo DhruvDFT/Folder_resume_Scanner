@@ -1,0 +1,135 @@
+# install_requirements.py - Install all required libraries for enhanced parser
+
+import subprocess
+import sys
+import os
+
+def install_package(package_name, import_name=None):
+    """Install a package and verify it can be imported"""
+    if import_name is None:
+        import_name = package_name
+    
+    try:
+        __import__(import_name)
+        print(f"✅ {package_name} is already installed")
+        return True
+    except ImportError:
+        print(f"⏳ Installing {package_name}...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+            print(f"✅ {package_name} installed successfully")
+            return True
+        except subprocess.CalledProcessError:
+            print(f"❌ Failed to install {package_name}")
+            return False
+
+def main():
+    print("🔧 ENHANCED RESUME PARSER - DEPENDENCY INSTALLER")
+    print("="*60)
+    
+    # Required packages
+    packages = [
+        ("PyPDF2", "PyPDF2"),
+        ("python-docx", "docx"),
+        ("pandas", "pandas"),
+        ("openpyxl", "openpyxl"),
+        ("pdfplumber", "pdfplumber"),
+        ("PyMuPDF", "fitz"),
+        ("spacy", "spacy")
+    ]
+    
+    print("Installing required packages...")
+    
+    success_count = 0
+    total_packages = len(packages)
+    
+    for package_name, import_name in packages:
+        if install_package(package_name, import_name):
+            success_count += 1
+        print()
+    
+    # Special case: spaCy language model
+    if success_count >= len(packages) - 1:  # All packages except maybe spacy
+        print("📚 Installing spaCy English language model...")
+        try:
+            subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+            print("✅ spaCy English model installed successfully")
+        except subprocess.CalledProcessError:
+            print("⚠️  spaCy model installation failed - name extraction will use fallback method")
+    
+    print(f"\n{'='*60}")
+    print(f"📊 INSTALLATION SUMMARY:")
+    print(f"   Successfully installed: {success_count}/{total_packages} packages")
+    
+    if success_count == total_packages:
+        print("🎉 All packages installed successfully!")
+        print("🚀 You can now run the enhanced resume parser")
+    elif success_count >= total_packages - 2:
+        print("⚠️  Most packages installed - parser will work with reduced functionality")
+    else:
+        print("❌ Several packages failed to install - parser may not work properly")
+    
+    print(f"\n💡 NEXT STEPS:")
+    print("1. Run the diagnostic script to test extraction")
+    print("2. Use the enhanced parser GUI")
+    print("3. Process your resume files")
+    
+    # Test installations
+    print(f"\n🧪 TESTING INSTALLATIONS:")
+    
+    test_results = []
+    
+    # Test PyPDF2
+    try:
+        import PyPDF2
+        test_results.append(("PyPDF2", "✅"))
+    except ImportError:
+        test_results.append(("PyPDF2", "❌"))
+    
+    # Test docx
+    try:
+        import docx
+        test_results.append(("python-docx", "✅"))
+    except ImportError:
+        test_results.append(("python-docx", "❌"))
+    
+    # Test pandas
+    try:
+        import pandas
+        test_results.append(("pandas", "✅"))
+    except ImportError:
+        test_results.append(("pandas", "❌"))
+    
+    # Test pdfplumber
+    try:
+        import pdfplumber
+        test_results.append(("pdfplumber", "✅"))
+    except ImportError:
+        test_results.append(("pdfplumber", "❌"))
+    
+    # Test PyMuPDF
+    try:
+        import fitz
+        test_results.append(("PyMuPDF", "✅"))
+    except ImportError:
+        test_results.append(("PyMuPDF", "❌"))
+    
+    # Test spacy
+    try:
+        import spacy
+        nlp = spacy.load("en_core_web_sm")
+        test_results.append(("spaCy + model", "✅"))
+    except ImportError:
+        test_results.append(("spaCy", "❌"))
+    except OSError:
+        test_results.append(("spaCy model", "❌"))
+    
+    for package, status in test_results:
+        print(f"   {package}: {status}")
+    
+    working_packages = len([r for r in test_results if r[1] == "✅"])
+    print(f"\n📈 {working_packages}/{len(test_results)} packages working correctly")
+
+if __name__ == "__main__":
+    main()
+    input("\nPress Enter to exit...")
