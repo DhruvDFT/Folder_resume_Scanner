@@ -1,22 +1,31 @@
 #!/usr/bin/env python3
 """
-Minimal Resume Categorizer - Railway Test
-Start with this basic version to ensure deployment works
+Super minimal Flask app with no external dependencies
+This will work even if requirements.txt is missing
 """
 
 import os
-from flask import Flask, request, render_template_string, jsonify, redirect, flash
+import sys
 
-app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'test-secret-key')
+# Use only Python standard library
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import json
 
-@app.route('/')
-def home():
-    return '''
+class ResumeHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        path = urlparse(self.path).path
+        
+        if path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            html = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Resume Categorizer</title>
+    <title>Resume Categorizer - Railway Test</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
@@ -34,7 +43,7 @@ def home():
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
         }
         h1 { color: #2d3748; margin-bottom: 20px; }
         .status {
@@ -58,94 +67,105 @@ def home():
             background: #f8f9fa; 
             padding: 15px; 
             border-radius: 8px; 
-            margin: 20px 0; 
+            margin: 20px 0;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📁 Resume Categorizer</h1>
+        <h1>🚀 Resume Categorizer</h1>
         
         <div class="status">
-            ✅ Railway Deployment Successful!
+            ✅ Railway Deployment Working!<br>
+            🎯 No dependencies required
         </div>
         
-        <p>Web-based resume categorization system</p>
-        
+        <p><strong>System Status:</strong></p>
         <div class="info">
-            <strong>System Status:</strong><br>
-            🐍 Python: Working<br>
-            🌐 Flask: Working<br>
+            🐍 Python: ''' + sys.version.split()[0] + '''<br>
+            🌐 Server: HTTP (built-in)<br>
             🚂 Railway: Connected<br>
-            📦 Nixpacks: Success
+            📦 Dependencies: None needed<br>
+            🔧 Port: ''' + str(os.environ.get('PORT', '5000')) + '''
         </div>
         
+        <a href="/health" class="btn">🏥 Health Check</a>
         <a href="/test" class="btn">🧪 Test API</a>
-        <a href="/upload" class="btn">📤 Upload Test</a>
         
-        <p style="margin-top: 30px; color: #666; font-size: 14px;">
-            Ready to process resume files!<br>
-            This minimal version confirms deployment works.
+        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; color: #856404; border-radius: 8px;">
+            <strong>✅ Deployment Success!</strong><br>
+            This proves Railway can deploy your Python app.<br>
+            Next step: Add Flask and file processing.
+        </div>
+        
+        <p style="margin-top: 20px; color: #666; font-size: 12px;">
+            Using Python standard library only - no requirements.txt needed!
         </p>
     </div>
 </body>
 </html>'''
+            self.wfile.write(html.encode())
+            
+        elif path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'OK')
+            
+        elif path == '/test':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            
+            data = {
+                'status': 'working',
+                'message': 'Resume Categorizer API - Standard Library Version',
+                'python_version': sys.version.split()[0],
+                'port': os.environ.get('PORT', '5000'),
+                'environment': {
+                    'RAILWAY_ENVIRONMENT': os.environ.get('RAILWAY_ENVIRONMENT', 'not_set'),
+                    'PORT': os.environ.get('PORT', 'not_set'),
+                },
+                'dependencies': 'none_required',
+                'next_steps': [
+                    'Add requirements.txt with Flask',
+                    'Upgrade to Flask-based app',
+                    'Add document processing libraries'
+                ]
+            }
+            
+            self.wfile.write(json.dumps(data, indent=2).encode())
+            
+        else:
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b'<h1>404 - Page Not Found</h1><p><a href="/">Go Home</a></p>')
 
-@app.route('/health')
-def health():
-    return 'OK'
+    def log_message(self, format, *args):
+        # Custom logging
+        print(f"[{self.date_time_string()}] {format % args}")
 
-@app.route('/test')
-def test():
-    return jsonify({
-        'status': 'working',
-        'message': 'Resume Categorizer API is running',
-        'python_version': os.sys.version.split()[0],
-        'port': os.environ.get('PORT', '5000'),
-        'environment': {
-            'RAILWAY_ENVIRONMENT': os.environ.get('RAILWAY_ENVIRONMENT'),
-            'PORT': os.environ.get('PORT'),
-            'SECRET_KEY': 'configured' if os.environ.get('SECRET_KEY') else 'default'
-        }
-    })
-
-@app.route('/upload', methods=['GET', 'POST'])
-def upload():
-    if request.method == 'POST':
-        return jsonify({
-            'message': 'Upload endpoint working',
-            'files_received': len(request.files),
-            'next_step': 'Add document processing libraries'
-        })
+def run_server():
+    port = int(os.environ.get('PORT', 5000))
     
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload Test</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
-        input[type="file"] { width: 100%; padding: 10px; margin: 10px 0; }
-        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>📤 Upload Test</h2>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="files" multiple accept=".pdf,.docx,.txt">
-            <button type="submit">Test Upload</button>
-        </form>
-        <p><a href="/">← Back to Home</a></p>
-    </div>
-</body>
-</html>'''
+    print("🚀 Starting Resume Categorizer Server...")
+    print(f"🌐 Port: {port}")
+    print(f"🐍 Python: {sys.version.split()[0]}")
+    print(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+    print(f"📁 Working Directory: {os.getcwd()}")
+    print(f"📄 Files in directory: {os.listdir('.')}")
+    print("✅ No external dependencies required!")
+    print(f"🌍 Server will be available at: http://0.0.0.0:{port}")
+    
+    server = HTTPServer(('0.0.0.0', port), ResumeHandler)
+    
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n🛑 Server stopped")
+        server.server_close()
 
 if __name__ == '__main__':
-    print("🚀 Starting Resume Categorizer...")
-    print(f"🌐 Port: {os.environ.get('PORT', 5000)}")
-    print(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-    
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    run_server()
